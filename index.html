@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Turnier-App EHC Biel-Bienne</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #c00;
+      --color-secondary: #0033a0;
+      --color-accent: #fff9a3;
+      --color-bg: #f7f9fb;
+      --color-card: #fff;
+      --color-border: #e0e0e0;
+      --radius: 18px;
+      --shadow: 0 4px 16px rgba(0,0,0,0.07);
+      --transition: 0.18s cubic-bezier(.4,0,.2,1);
+    }
+
+    html, body {
+      font-family: 'Montserrat', Avenir, Arial, sans-serif;
+      background: var(--color-bg);
+      margin: 0;
+      padding: 0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 0 3rem 0;
+    }
+
+    h1 {
+      color: var(--color-primary);
+      margin: 0 0 0.7rem 0;
+      font-weight: 700;
+      font-size: 2.2rem;
+      letter-spacing: 0.01em;
+    }
+    h2 {
+      color: var(--color-secondary);
+      margin: 1.5rem 0 0.7rem 0;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .logo {
+      width: 110px;
+      margin-bottom: 1rem;
+      border-radius: 50%;
+      box-shadow: var(--shadow);
+      background: var(--color-card);
+      padding: 12px;
+      border: 3px solid #e8e8e8;
+    }
+
+    .card {
+      background: var(--color-card);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.5rem;
+      width: 99%;
+      max-width: 580px;
+      margin: 0.8rem auto 1.1rem;
+      border: 1.5px solid var(--color-border);
+    }
+
+    /* Teams nebeneinander, auch mobil */
+    #teams {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      width: 100%;
+      margin: 0 auto;
+      max-width: 700px;
+    }
+    .team-edit {
+      flex: 1 1 170px;
+      min-width: 120px;
+      max-width: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f2f6f7;
+      border-radius: var(--radius);
+      padding: 1rem 0.7rem 1.2rem 0.7rem;
+      margin-bottom: 0.3rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      border: 1px solid #e7e7e7;
+    }
+    .team-edit input[type="text"] {
+      width: 110px;
+      padding: 0.38rem 0.5rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      text-align: center;
+      background: #fff;
+      outline: none;
+      transition: border var(--transition);
+    }
+    .team-edit input[type="text"]:focus {
+      border: 1.5px solid var(--color-secondary);
+      background: #eaf4fb;
+    }
+    .team-edit input[type="color"] {
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    select, button, input[type="number"] {
+      padding: 0.43rem 0.9rem;
+      border-radius: 10px;
+      border: 1.5px solid #bbb;
+      font-size: 1rem;
+      background: #fff;
+      transition: border var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    select:focus, input[type="number"]:focus {
+      border: 1.5px solid var(--color-secondary);
+      box-shadow: 0 2px 8px #0033a012;
+    }
+    button {
+      background: linear-gradient(90deg, var(--color-primary) 80%, #f57c00 100%);
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(200,0,0,0.06);
+      letter-spacing: 0.03em;
+    }
+    button:active {
+      filter: brightness(0.97);
+    }
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    #controls, #tournament, #timer {
+      margin-top: 1.3rem;
+      width: 99%;
+      max-width: 570px;
+    }
+
+    #tournament {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+      margin-top: 1rem;
+      background: var(--color-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem 0.5rem 1.6rem 0.5rem;
+    }
+
+    #match-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: stretch;
+      width: 98%;
+      max-width: 470px;
+      margin: 0 auto;
+    }
+    .match-row {
+      display: flex;
+      align-items: center;
+      gap: 0.38rem;
+      background: #f6fafd;
+      border-radius: 10px;
+      padding: 0.4rem 0.7rem;
+      border: 1px solid #e0e0e0;
+      font-size: 1.06rem;
+    }
+    .match-row select {
+      width: 95px;
+    }
+
+    /* für farbige Select-Optionen als Markierung */
+    .team-option-view {
+      display: inline-block;
+      border-radius: 8px;
+      padding: 2px 8px;
+      margin-right: 2px;
+      font-weight: bold;
+      font-size: 1em;
+    }
+
+    .runde-block {
+      margin-bottom: 1.3rem;
+      background: #f8f8fa;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 7px #0033a012;
+      padding: 0.6rem 0.3rem 0.9rem 0.3rem;
+    }
+    .runde-title {
+      color: var(--color-primary);
+      font-weight: 700;
+      margin-bottom: 0.3em;
+      font-size: 1.1em;
+    }
+
+    .games-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      justify-content: center;
+      margin-bottom: 0.4rem;
+    }
+    .game, .knock {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      justify-content: center;
+      background: #f5f6ff;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 8px #0033a00d;
+      padding: 0.5rem 0.7rem;
+      margin-bottom: 0.3rem;
+    }
+    .team-label {
+      padding: 10px 20px;
+      border-radius: 13px;
+      min-width: 100px;
+      text-align: center;
+      font-weight: 600;
+      box-shadow: 0 1px 6px #bbb2;
+      font-size: 1.08rem;
+      transition: background var(--transition), color var(--transition);
+      border: 1.5px solid #d4d4d4;
+      background: #fff;
+      display: inline-block;
+    }
+    .game input, .knock input {
+      width: 60px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: 1.5px solid #bbb;
+      text-align: center;
+      padding: 0.3rem 0.1rem;
+      background: #fff;
+      transition: border var(--transition);
+    }
+    .game input:focus, .knock input:focus {
+      border: 1.5px solid var(--color-primary);
+      background: #fdf4f4;
+    }
+
+    table {
+      margin: 1.1rem auto 0.2rem;
+      border-collapse: collapse;
+      width: 96%;
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      font-size: 1.06rem;
+    }
+    th, td {
+      border: 2px solid #e0e0e0;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    th {
+      background: var(--color-secondary);
+      color: #fff;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    #timer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      background: #f7f2e1;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 8px #0033a00e;
+      padding: 0.7rem 1rem;
+      font-size: 1.09rem;
+    }
+    #countdown {
+      font-weight: bold;
+      font-size: 1.3em;
+      margin-left: 0.6rem;
+      color: var(--color-primary);
+      letter-spacing: 0.04em;
+    }
+    @media (max-width: 600px) {
+      #teams {
+        gap: 0.7rem;
+        max-width: 99vw;
+        flex-direction: row;
+      }
+      .team-edit {
+        min-width: 110px;
+        max-width: 49vw;
+        padding: 0.6rem 0.2rem 0.9rem 0.2rem;
+      }
+      .team-edit input[type="text"] {
+        width: 90px;
+        font-size: 0.98rem;
+      }
+      .team-label {
+        min-width: 70px;
+        font-size: 0.99rem;
+      }
+      .game input, .knock input {
+        width: 38px;
+        font-size: 1rem;
+      }
+      #match-editor, .match-row {
+        max-width: 99vw;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<img src="ehcb-logo.png" class="logo" alt="EHCB Logo">
+<h1>Turnier-App EHC Biel-Bienne</h1>
+
+<div class="card">
+  <h2>Teams & Farben</h2>
+  <div id="teams">
+    <div class="team-edit"><input type="text" id="team0" value="Blau"><input type="color" id="color0" value="#ADD8E6"></div>
+    <div class="team-edit"><input type="text" id="team1" value="Rot"><input type="color" id="color1" value="#F4A6A6"></div>
+    <div class="team-edit"><input type="text" id="team2" value="Gelb"><input type="color" id="color2" value="#FFF9A3"></div>
+    <div class="team-edit"><input type="text" id="team3" value="Schwarz"><input type="color" id="color3" value="#D3D3D3"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Turnier-Modus</h2>
+  <select id="mode">
+    <option value="jgj">Jeder gegen Jeden</option>
+    <option value="hrr">Hin-&-Rückrunde + Final + Platz 3</option>
+    <option value="direct">Direkter Final</option>
+    <option value="playoff">Playoff (Vorrunde+HF+Platz 3+Finale)</option>
+    <option value="gol">Grossfeld – 3 Spiele pro Team</option>
+  </select>
+  <button id="loadMode" style="margin-left:0.8rem">Modus laden</button>
+</div>
+
+<div class="card">
+  <h2>Vorrunden-Paarungen</h2>
+  <div id="match-editor"></div>
+</div>
+
+<div id="timer" class="card" style="margin-bottom:0.7rem;">
+  <input type="number" id="min" value="5" min="0" style="width:3rem"> Min 
+  <input type="number" id="sec" value="00" min="0" max="59" style="width:2rem"> Sek 
+  <button id="startTimerBtn">Start Runde</button>
+  <span id="countdown"></span>
+</div>
+
+<div id="controls" class="card">
+  <button id="startTournament" style="font-size:1.18em;">Turnier starten</button>
+</div>
+
+<div id="tournament">
+  <button id="resetAll" style="margin-bottom:1rem;align-self:flex-start;">← Zurück</button>
+  <div id="runde-list"></div>
+  <div id="table"></div>
+  <div id="knockout"></div>
+</div>
+
+<script>
+// Hilfsfunktion: Automatische Textfarbe für gute Lesbarkeit
+function getContrastYIQ(hexcolor){
+    hexcolor = hexcolor.replace('#','');
+    if (hexcolor.length === 3) hexcolor = hexcolor[0]+hexcolor[0]+hexcolor[1]+hexcolor[1]+hexcolor[2]+hexcolor[2];
+    var r = parseInt(hexcolor.substr(0,2),16);
+    var g = parseInt(hexcolor.substr(2,2),16);
+    var b = parseInt(hexcolor.substr(4,2),16);
+    var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 160) ? '#222' : '#fff';
+}
+document.getElementById('loadMode').addEventListener('click', loadMode);
+document.getElementById('startTimerBtn').addEventListener('click', startTimer);
+document.getElementById('startTournament').addEventListener('click', ()=>{
+  loadMode(); beginTournament();
+});
+document.getElementById('resetAll').addEventListener('click', ()=>location.reload());
+
+let teams, colors, matches, groupScores={}, koScores={};
+
+const defaultMatches = {
+  jgj: [{a:0,b:1},{a:2,b:3},{a:0,b:2},{a:1,b:3},{a:0,b:3},{a:1,b:2}],
+  hrr: [{a:0,b:2},{a:1,b:3},{a:2,b:1},{a:3,b:0},{a:2,b:3},{a:0,b:1},{a:2,b:0},{a:3,b:1},{a:1,b:2},{a:0,b:3},{a:3,b:2},{a:1,b:0}],
+  direct: [{a:0,b:1},{a:2,b:3},{a:2,b:1},{a:3,b:0},{a:2,b:3},{a:0,b:1},{a:0,b:3},{a:1,b:2}],
+  playoff: [{a:0,b:1},{a:0,b:2},{a:0,b:3},{a:1,b:2},{a:1,b:3},{a:2,b:3}],
+  gol: [{a:1,b:2},{a:1,b:2},{a:1,b:2}]
+};
+
+function loadMode(){
+  teams  = [0,1,2,3].map(i=>document.getElementById('team'+i).value);
+  colors = [0,1,2,3].map(i=>document.getElementById('color'+i).value);
+
+  const mode = document.getElementById('mode').value;
+  // Feldzuordnung wird in der Gruppierungsfunktion gemacht!
+  matches = defaultMatches[mode].map((x,i)=>({idx:i,a:x.a,b:x.b}));
+  renderMatchEditor();
+  document.getElementById('tournament').style.display='none';
+}
+
+function renderMatchEditor(){
+  const ed = document.getElementById('match-editor');
+  ed.innerHTML='';
+  // Für Editor: Runde-Gruppierung nach unten, damit keine Überschneidungen
+  const runden = groupMatchesToRounds(matches, 2);
+
+  runden.forEach((runde, ridx) => {
+    runde.forEach((m, fieldIdx) => {
+      const d=document.createElement('div'); d.className='match-row';
+      // Feldnummer automatisch vergeben
+      const fieldSelect = `<span style="font-weight:bold;">Feld ${fieldIdx+1}</span>`;
+      const teamAView = `<span class="team-option-view" style="background:${colors[m.a]};color:${getContrastYIQ(colors[m.a])}">${teams[m.a]}</span>`;
+      const teamBView = `<span class="team-option-view" style="background:${colors[m.b]};color:${getContrastYIQ(colors[m.b])}">${teams[m.b]}</span>`;
+      d.innerHTML = `${fieldSelect} ${teamAView} vs ${teamBView}`;
+      ed.appendChild(d);
+    });
+  });
+}
+
+function startTimer(){
+  clearInterval(window._timerId);
+  let min = document.getElementById('min'), sec = document.getElementById('sec');
+  let total=parseInt(min.value)*60+parseInt(sec.value);
+  const disp=document.getElementById('countdown');
+  disp.textContent=pad(min.value)+':'+pad(sec.value);
+  window._timerId=setInterval(()=>{
+    total--;
+    const m=Math.floor(total/60), s=total%60;
+    disp.textContent=pad(m)+':'+pad(s);
+    if(total<=0) clearInterval(window._timerId);
+  },1000);
+}
+function pad(n){return String(n).padStart(2,'0')}
+
+function beginTournament(){
+  ['teams','controls','match-editor','mode','loadMode'].forEach(id=>{
+    let el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  document.getElementById('timer').style.display='flex';
+  document.getElementById('tournament').style.display='flex';
+  renderGroup(); renderKnockout();
+}
+
+// Gruppiert Matches zu Runden, sodass keine Teams doppelt gleichzeitig spielen
+function groupMatchesToRounds(matches, felder=2) {
+  let matchesLeft = matches.slice();
+  const rounds = [];
+  while (matchesLeft.length > 0) {
+    let usedTeams = new Set();
+    let thisRound = [];
+    for (let i = 0; i < matchesLeft.length; i++) {
+      let m = matchesLeft[i];
+      if (!usedTeams.has(m.a) && !usedTeams.has(m.b)) {
+        thisRound.push(m);
+        usedTeams.add(m.a);
+        usedTeams.add(m.b);
+        if (thisRound.length >= felder) break;
+      }
+    }
+    rounds.push(thisRound);
+    matchesLeft = matchesLeft.filter(m => !thisRound.includes(m));
+  }
+  return rounds;
+}
+
+function renderGroup(){
+  groupScores={};
+  const runden = groupMatchesToRounds(matches, 2);
+  const rundeList = document.getElementById('runde-list');
+  rundeList.innerHTML = '';
+  let matchIdx = 0;
+  runden.forEach((runde, ridx) => {
+    const rDiv = document.createElement('div');
+    rDiv.className = 'runde-block';
+    rDiv.innerHTML = `<div class="runde-title">Runde ${ridx+1}</div>`;
+    const gamesRow = document.createElement('div');
+    gamesRow.className = 'games-row';
+    runde.forEach((m, fieldIdx) => {
+      // Farbige Labels, Feldnummer
+      const colorA = colors[m.a], colorB = colors[m.b];
+      const styleA = `background:${colorA};color:${getContrastYIQ(colorA)}`;
+      const styleB = `background:${colorB};color:${getContrastYIQ(colorB)}`;
+      const gDiv = document.createElement('div'); gDiv.className = 'game';
+      gDiv.innerHTML = `<b style="margin-right:0.5em;">Feld ${fieldIdx+1}</b>
+        <span class="team-label" style="${styleA}">${teams[m.a]}</span>
+        <input data-key="G${matchIdx}" data-i="0" type="number" min="0" value="0">:
+        <input data-key="G${matchIdx}" data-i="1" type="number" min="0" value="0">
+        <span class="team-label" style="${styleB}">${teams[m.b]}</span>`;
+      gDiv.querySelectorAll('input')[0].addEventListener('input', e => {
+        const key = "G" + matchIdx, arr = groupScores[key]||[0,0];
+        arr[0]=+e.target.value; groupScores[key]=arr; renderTable(); renderKnockout();
+      });
+      gDiv.querySelectorAll('input')[1].addEventListener('input', e => {
+        const key = "G" + matchIdx, arr = groupScores[key]||[0,0];
+        arr[1]=+e.target.value; groupScores[key]=arr; renderTable(); renderKnockout();
+      });
+      gamesRow.appendChild(gDiv);
+      matchIdx++;
+    });
+    rDiv.appendChild(gamesRow);
+    rundeList.appendChild(rDiv);
+  });
+}
+
+function renderTable(){
+  const stat={}; teams.forEach(t=>stat[t]={pts:0,gf:0,ga:0});
+  Object.entries(groupScores).forEach(([k,[g1,g2]])=>{
+    const m=matches[+k.slice(1)], t1=teams[m.a], t2=teams[m.b];
+    stat[t1].gf+=g1; stat[t1].ga+=g2;
+    stat[t2].gf+=g2; stat[t2].ga+=g1;
+    if(g1>g2) stat[t1].pts+=3;
+    else if(g2>g1) stat[t2].pts+=3;
+    else{stat[t1].pts++;stat[t2].pts++;}
+  });
+  const sorted=Object.keys(stat).sort((a,b)=>
+    stat[b].pts-stat[a].pts || ((stat[b].gf-stat[b].ga)-(stat[a].gf-stat[a].ga))
+  );
+  let html='<h2>Gesamt-Tabelle</h2><table><tr><th>Team</th><th>Pkte</th><th>GD</th></tr>';
+  sorted.forEach(t=>{
+    const gd=stat[t].gf-stat[t].ga;
+    html+=`<tr><td>${t}</td><td>${stat[t].pts}</td><td>${gd}</td></tr>`;
+  });
+  html+='</table>'; document.getElementById('table').innerHTML=html;
+  return sorted;
+}
+
+function renderKnockout(){
+  const mode=document.getElementById('mode').value,
+        order=renderTable(),
+        kn=document.getElementById('knockout');
+  kn.innerHTML='';
+  if(mode==='playoff'){
+    kn.innerHTML+='<h2>Halbfinale</h2>';
+    [[0,3],[1,2]].forEach((p,i)=>{
+      const colorA = colors[teams.indexOf(order[p[0]])], colorB = colors[teams.indexOf(order[p[1]])];
+      const styleA = `background:${colorA};color:${getContrastYIQ(colorA)}`;
+      const styleB = `background:${colorB};color:${getContrastYIQ(colorB)}`;
+      const d=document.createElement('div'); d.className='knock';
+      d.innerHTML=`<span class="team-label" style="${styleA}">${order[p[0]]}</span><input data-key="HF${i}" data-i="0" type="number" min="0" value="0">:<input data-key="HF${i}" data-i="1" type="number" min="0" value="0"><span class="team-label" style="${styleB}">${order[p[1]]}</span>`;
+      kn.appendChild(d);
+    });
+    kn.innerHTML+='<h2>Platz 3</h2>'; addKO(order[2],order[3],'T3');
+    kn.innerHTML+='<h2>Finale</h2>';   addKO(order[0],order[1],'F');
+  }
+}
+
+function addKO(a,b,k){
+  const [v1,v2]=koScores[k]||[0,0], d=document.createElement('div');
+  const colorA = colors[teams.indexOf(a)], colorB = colors[teams.indexOf(b)];
+  const styleA = `background:${colorA};color:${getContrastYIQ(colorA)}`;
+  const styleB = `background:${colorB};color:${getContrastYIQ(colorB)}`;
+  d.className='knock';
+  d.innerHTML=`<span class="team-label" style="${styleA}">${a}</span><input data-key="${k}" data-i="0" type="number" min="0" value="${v1}">:<input data-key="${k}" data-i="1" type="number" min="0" value="${v2}"><span class="team-label" style="${styleB}">${b}</span>`;
+  d.querySelectorAll('input').forEach(inp=>{
+    inp.oninput=e=>{
+      const arr=koScores[k]||[0,0]; arr[+e.target.dataset.i]=+e.target.value; koScores[k]=arr;
+    };
+  });
+  document.getElementById('knockout').appendChild(d);
+}
+</script>
+
+</body>
+</html>
