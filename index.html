@@ -70,21 +70,18 @@
       border: 1.5px solid var(--color-border);
     }
 
-    /* Teams nebeneinander, auch mobil */
+    /* Teams nebeneinander, horizontal scrollen falls zu wenig Platz */
     #teams {
       display: flex;
       flex-direction: row;
-      justify-content: center;
-      align-items: flex-start;
       gap: 1.2rem;
-      flex-wrap: wrap;
       width: 100%;
-      margin: 0 auto;
       max-width: 700px;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
     }
     .team-edit {
-      flex: 1 1 170px;
-      min-width: 120px;
+      min-width: 150px;
       max-width: 200px;
       display: flex;
       flex-direction: column;
@@ -96,6 +93,7 @@
       margin-bottom: 0.3rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
       border: 1px solid #e7e7e7;
+      flex-shrink: 0;
     }
     .team-edit input[type="text"] {
       width: 110px;
@@ -120,6 +118,14 @@
       cursor: pointer;
       background: none;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    @media (max-width: 700px) {
+      #teams { max-width: 99vw; }
+      .team-edit { min-width: 140px; }
+    }
+    @media (max-width: 500px) {
+      .team-edit { min-width: 120px; }
     }
 
     select, button, input[type="number"] {
@@ -193,7 +199,6 @@
       width: 95px;
     }
 
-    /* für farbige Select-Optionen als Markierung */
     .team-option-view {
       display: inline-block;
       border-radius: 8px;
@@ -305,17 +310,14 @@
     }
     @media (max-width: 600px) {
       #teams {
-        gap: 0.7rem;
         max-width: 99vw;
-        flex-direction: row;
       }
       .team-edit {
-        min-width: 110px;
-        max-width: 49vw;
-        padding: 0.6rem 0.2rem 0.9rem 0.2rem;
+        min-width: 100px;
+        max-width: 130px;
       }
       .team-edit input[type="text"] {
-        width: 90px;
+        width: 80px;
         font-size: 0.98rem;
       }
       .team-label {
@@ -382,6 +384,10 @@
   <div id="knockout"></div>
 </div>
 
+<audio id="buzzer" preload="auto">
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b4848.mp3" type="audio/mpeg">
+</audio>
+
 <script>
 // Hilfsfunktion: Automatische Textfarbe für gute Lesbarkeit
 function getContrastYIQ(hexcolor){
@@ -393,6 +399,7 @@ function getContrastYIQ(hexcolor){
     var yiq = ((r*299)+(g*587)+(b*114))/1000;
     return (yiq >= 160) ? '#222' : '#fff';
 }
+
 document.getElementById('loadMode').addEventListener('click', loadMode);
 document.getElementById('startTimerBtn').addEventListener('click', startTimer);
 document.getElementById('startTournament').addEventListener('click', ()=>{
@@ -415,7 +422,6 @@ function loadMode(){
   colors = [0,1,2,3].map(i=>document.getElementById('color'+i).value);
 
   const mode = document.getElementById('mode').value;
-  // Feldzuordnung wird in der Gruppierungsfunktion gemacht!
   matches = defaultMatches[mode].map((x,i)=>({idx:i,a:x.a,b:x.b}));
   renderMatchEditor();
   document.getElementById('tournament').style.display='none';
@@ -424,13 +430,11 @@ function loadMode(){
 function renderMatchEditor(){
   const ed = document.getElementById('match-editor');
   ed.innerHTML='';
-  // Für Editor: Runde-Gruppierung nach unten, damit keine Überschneidungen
   const runden = groupMatchesToRounds(matches, 2);
 
   runden.forEach((runde, ridx) => {
     runde.forEach((m, fieldIdx) => {
       const d=document.createElement('div'); d.className='match-row';
-      // Feldnummer automatisch vergeben
       const fieldSelect = `<span style="font-weight:bold;">Feld ${fieldIdx+1}</span>`;
       const teamAView = `<span class="team-option-view" style="background:${colors[m.a]};color:${getContrastYIQ(colors[m.a])}">${teams[m.a]}</span>`;
       const teamBView = `<span class="team-option-view" style="background:${colors[m.b]};color:${getContrastYIQ(colors[m.b])}">${teams[m.b]}</span>`;
@@ -446,23 +450,57 @@ function startTimer(){
   let total=parseInt(min.value)*60+parseInt(sec.value);
   const disp=document.getElementById('countdown');
   disp.textContent=pad(min.value)+':'+pad(sec.value);
+  let fiveSecWarned = false;
   window._timerId=setInterval(()=>{
     total--;
-    const m=Math.floor(total/60), s=total%60;
-    disp.textContent=pad(m)+':'+pad(s);
-    if(total<=0) clearInterval(window._timerId);
+    if(total <= 5 && total > 0 && !fiveSecWarned) {
+      fiveSecWarned = true;
+      let countdown = total;
+      let origText = disp.textContent;
+      let interval = setInterval(() => {
+        if(countdown > 0) {
+          disp.textContent = "Ende in " + countdown + "s";
+          countdown--;
+        } else {
+          clearInterval(interval);
+          disp.textContent = "⏰ Zeit abgelaufen!";
+          playBuzzer();
+        }
+      }, 1000);
+    }
+    if(total > 5) {
+      const m=Math.floor(total/60), s=total%60;
+      disp.textContent=pad(m)+':'+pad(s);
+    }
+    if(total<=0) {
+      clearInterval(window._timerId);
+      disp.textContent = "⏰ Zeit abgelaufen!";
+      playBuzzer();
+    }
   },1000);
 }
 function pad(n){return String(n).padStart(2,'0')}
 
-function beginTournament(){
-  ['teams','controls','match-editor','mode','loadMode'].forEach(id=>{
-    let el=document.getElementById(id);
-    if(el) el.style.display='none';
-  });
-  document.getElementById('timer').style.display='flex';
-  document.getElementById('tournament').style.display='flex';
-  renderGroup(); renderKnockout();
+function playBuzzer() {
+  const audio = document.getElementById('buzzer');
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play();
+  } else {
+    if(window.AudioContext){
+      let ctx = new AudioContext();
+      let o = ctx.createOscillator();
+      let g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(1, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+      o.start();
+      o.stop(ctx.currentTime + 0.3);
+    }
+  }
 }
 
 // Gruppiert Matches zu Runden, sodass keine Teams doppelt gleichzeitig spielen
@@ -487,6 +525,16 @@ function groupMatchesToRounds(matches, felder=2) {
   return rounds;
 }
 
+function beginTournament(){
+  ['teams','controls','match-editor','mode','loadMode'].forEach(id=>{
+    let el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  document.getElementById('timer').style.display='flex';
+  document.getElementById('tournament').style.display='flex';
+  renderGroup(); renderKnockout();
+}
+
 function renderGroup(){
   groupScores={};
   const runden = groupMatchesToRounds(matches, 2);
@@ -500,7 +548,6 @@ function renderGroup(){
     const gamesRow = document.createElement('div');
     gamesRow.className = 'games-row';
     runde.forEach((m, fieldIdx) => {
-      // Farbige Labels, Feldnummer
       const colorA = colors[m.a], colorB = colors[m.b];
       const styleA = `background:${colorA};color:${getContrastYIQ(colorA)}`;
       const styleB = `background:${colorB};color:${getContrastYIQ(colorB)}`;
